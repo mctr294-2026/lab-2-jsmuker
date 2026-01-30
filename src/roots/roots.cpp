@@ -115,37 +115,44 @@ bool newton_raphson(std::function<double(double)> f,
 }
 
 /* Secant Method */
-bool secant(std::function<double(double)> f,
-            double a, double b, double c,
-            double *root)
+bool secant(std::function<double(double)> f, double a, double b, double c, double *root)
 {
-    double x0 = a;
-    double x1 = c;
+    double x_old = c + TOL;  // first initial guess (slightly offset)
+    double x_current = c;     // second initial guess
 
-    double f0 = f(x0);
-    double f1 = f(x1);
+    // Check if the root is guaranteed to exist in [a,b]
+    if (f(a) * f(b) > 0) {
+        return false;
+    }
 
     for (int i = 0; i < MAX_ITER; ++i)
     {
-        if (std::abs(f1 - f0) < 1e-12)
+        double f_current = f(x_current);
+        double f_old = f(x_old);
+
+        // Avoid division by zero
+        if (std::fabs(f_current - f_old) < 1e-12) {
             return false;
+        }
 
-        double x2 = x1 - f1 * (x1 - x0) / (f1 - f0);
+        // Secant formula
+        double x_new = x_current - f_current * ((x_current - x_old) / (f_current - f_old));
 
-        if (x2 < a || x2 > b)
+        // Check if new guess is within the interval
+        if (x_new < a || x_new > b) {
             return false;
+        }
 
-        if (std::abs(x2 - x1) < TOL)
-        {
-            *root = x2;
+        // Check if we are close enough to the root
+        if (std::fabs(f(x_new)) < TOL) {
+            *root = x_new;
             return true;
         }
 
-        x0 = x1;
-        f0 = f1;
-        x1 = x2;
-        f1 = f(x1);
+        // Update points for next iteration
+        x_old = x_current;
+        x_current = x_new;
     }
 
-    return false;
+    return false; // Root not found within MAX_ITER
 }
